@@ -273,3 +273,41 @@ Backend는 두 MCP Server에서 발견한 Tool Schema에 Server prefix를 붙여
 Responses API에 전달합니다. `parallel_tool_calls=False`이므로 GPT는 한 Round에 Tool
 하나를 제안합니다. Backend가 Tool 결과를 돌려주면 GPT가 다음 Tool을 선택하며,
 Function Call 없이 답변할 때까지 Agent Loop를 반복합니다.
+
+## Docker Compose 빌드와 실행
+
+Docker Compose는 Travel MCP(`8010`), Backend(`8000`), Frontend(`8501`)를 각각
+컨테이너로 실행합니다. Policy MCP는 Backend 컨테이너가 stdio 자식 프로세스로 시작하므로
+별도 포트나 컨테이너가 없습니다. 아래 명령은 이 세 고정 포트 외 다른 포트를 열지 않습니다.
+
+```powershell
+cd C:\mini_agent\mini_agent\mini_agent_03_mcp
+docker compose --env-file .env.example config --quiet
+docker compose --env-file .env.example build
+docker compose --env-file .env up -d
+```
+
+컨테이너 시작 뒤에는 `http://127.0.0.1:8501`에서 화면을, `http://127.0.0.1:8000/health`에서
+Backend 상태를 확인합니다. Travel MCP endpoint는 `http://127.0.0.1:8010/mcp`입니다.
+실제 OpenAI 호출은 `.env`에만 `OPENAI_API_KEY`를 설정한 경우에만 가능합니다.
+
+```powershell
+docker compose ps
+docker compose logs backend
+docker compose down
+```
+
+`down`은 컨테이너만 종료하며 이미지를 삭제하지 않습니다.
+
+## Release 이미지 실행
+
+CI는 코드·Compose 검증과 이미지 빌드까지만 수행합니다. Docker Registry에 이미지를
+게시한 뒤에는 `.env`의 `TRAVEL_MCP_IMAGE`, `BACKEND_IMAGE`, `FRONTEND_IMAGE`에 해당
+이미지 주소와 tag를 설정하고 다음 명령으로 실행합니다.
+
+```powershell
+docker compose --env-file .env -f compose.yml -f compose.release.yml up -d
+```
+
+Release 실행도 동일하게 `8010`, `8000`, `8501`만 사용합니다. Registry 게시와 AWS 배포는
+자격 증명·대상 서비스 선택이 필요한 다음 CD 단계에서 별도 workflow로 구성합니다.
