@@ -1,27 +1,10 @@
+"""Frontend가 사용하는 Backend 주소를 읽습니다."""
 import os
+from pathlib import Path
 
 from dotenv import load_dotenv
 
+ROOT = Path(__file__).resolve().parents[2]
+load_dotenv(ROOT / ".env")
 
-load_dotenv()
-
-PYTHON_AGENT_API_URL = os.getenv(
-    "PYTHON_AGENT_API_URL",
-    "http://127.0.0.1:8000",
-).rstrip("/")
-LANGGRAPH_AGENT_API_URL = os.getenv(
-    "LANGGRAPH_AGENT_API_URL",
-    "http://127.0.0.1:8001",
-).rstrip("/")
-
-API_URLS = {
-    "Python Agent": PYTHON_AGENT_API_URL,
-    "LangGraph Agent": LANGGRAPH_AGENT_API_URL,
-}
-
-PROVIDERS = {
-    "GPT": "openai",
-    "Gemini": "gemini",
-    "Ollama/Llama": "ollama",
-    "Mock(개념 확인)": "mock",
-}
+BACKEND_URL = os.getenv("BACKEND_URL", "http://127.0.0.1:8000").rstrip("/")
