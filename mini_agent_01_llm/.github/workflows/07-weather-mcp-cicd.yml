@@ -1,6 +1,10 @@
 name: Mini Agent 01 LLM Docker Hub Release
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - "mini_agent_01_llm/**"
   workflow_dispatch:
     inputs:
       version:
@@ -43,11 +47,11 @@ jobs:
           context: mini_agent_01_llm
           file: mini_agent_01_llm/backend/Dockerfile
           push: true
-          tags: haedeuncha/mini-agent-01-llm:backend-${{ inputs.version }}
+          tags: haedeuncha/mini-agent-01-llm:backend-${{ github.event.inputs.version || github.sha }}
       - name: Build and push Frontend image
         uses: docker/build-push-action@v6
         with:
           context: mini_agent_01_llm
           file: mini_agent_01_llm/frontend/Dockerfile
           push: true
-          tags: haedeuncha/mini-agent-01-llm:frontend-${{ inputs.version }}
+          tags: haedeuncha/mini-agent-01-llm:frontend-${{ github.event.inputs.version || github.sha }}

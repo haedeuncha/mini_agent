@@ -2,8 +2,7 @@ name: Mini Agent 01 LLM CI
 
 on:
   push:
-    paths: ["mini_agent_01_llm/**"]
-  pull_request:
+    branches: [main]
     paths: ["mini_agent_01_llm/**"]
   workflow_dispatch:
 

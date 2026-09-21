@@ -1,6 +1,10 @@
 name: Mini Agent 01 LLM wk01 Deploy
 
 on:
+  workflow_run:
+    workflows: ["Mini Agent 01 LLM Docker Hub Release"]
+    types: [completed]
+    branches: [main]
   workflow_dispatch:
     inputs:
       version:
@@ -18,6 +22,9 @@ concurrency:
 
 jobs:
   deploy-and-verify:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     environment: haedeun
     steps:
@@ -43,6 +50,6 @@ jobs:
         env:
           AWS_HOST: ${{ secrets.AWS_HOST }}
           AWS_USER: ${{ secrets.AWS_USER }}
-          VERSION: ${{ inputs.version }}
+          VERSION: ${{ github.event.inputs.version || github.event.workflow_run.head_sha }}
         run: |
           ssh "$AWS_USER@$AWS_HOST" "cd ~/mini-agent-01-llm && test -f .env && sed -i 's#^BACKEND_IMAGE=.*#BACKEND_IMAGE=haedeuncha/mini-agent-01-llm:backend-$VERSION#; s#^FRONTEND_IMAGE=.*#FRONTEND_IMAGE=haedeuncha/mini-agent-01-llm:frontend-$VERSION#' .env && docker compose --env-file .env -f compose.release.yml config --quiet && docker compose --env-file .env -f compose.release.yml pull && docker compose --env-file .env -f compose.release.yml up -d && curl --fail --retry 12 --retry-delay 5 http://127.0.0.1:8000/health"
