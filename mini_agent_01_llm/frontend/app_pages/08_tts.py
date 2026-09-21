@@ -1,5 +1,6 @@
 import streamlit as st
 
+from clients.agent_client import is_openai_configured
 from core.api_client import BackendAPIError, request_audio
 
 
@@ -12,7 +13,16 @@ text = st.text_area("음성으로 변환할 안내문", default_text, max_chars=
 voice = st.selectbox("음성", ["coral", "marin", "cedar", "alloy", "nova"])
 instructions = st.text_input("말하기 방식", "한국어로 또렷하고 따뜻한 여행 가이드처럼 말하세요.")
 
-if st.button("음성 생성", type="primary", disabled=not text.strip()):
+try:
+    openai_ready = is_openai_configured()
+except BackendAPIError as error:
+    openai_ready = False
+    st.error(str(error))
+
+if not openai_ready:
+    st.warning("음성 생성을 사용하려면 배포 환경에 OPENAI_API_KEY 설정이 필요합니다.")
+
+if st.button("음성 생성", type="primary", disabled=not text.strip() or not openai_ready):
     try:
         with st.spinner("합성 음성을 생성하고 있습니다."):
             audio = request_audio(text, voice, instructions)
