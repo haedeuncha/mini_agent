@@ -19,7 +19,7 @@ concurrency:
 jobs:
   deploy-and-verify:
     runs-on: ubuntu-latest
-    environment: wk01
+    environment: haedeun
     steps:
       - uses: actions/checkout@v4
       - name: Configure wk01 SSH identity
