@@ -9,6 +9,15 @@ def get_providers():
     return request("GET", "/api/providers")
 
 
+def is_openai_configured() -> bool:
+    """Return only the safe, boolean provider status exposed by the backend."""
+    providers = get_providers()["providers"]
+    return any(
+        provider["provider"] == "openai" and provider["configured"]
+        for provider in providers
+    )
+
+
 def compare_concepts(message: str):
     return request("POST", "/api/concepts/compare", json={"message": message})
 

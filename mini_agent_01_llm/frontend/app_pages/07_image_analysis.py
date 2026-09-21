@@ -1,5 +1,6 @@
 import streamlit as st
 
+from clients.agent_client import is_openai_configured
 from core.api_client import BackendAPIError, upload_image
 
 
@@ -12,10 +13,19 @@ question = st.text_input(
     "이 이미지에서 여행자가 알아야 할 정보와 주의점을 알려주세요.",
 )
 
+try:
+    openai_ready = is_openai_configured()
+except BackendAPIError as error:
+    openai_ready = False
+    st.error(str(error))
+
+if not openai_ready:
+    st.warning("이미지 분석을 사용하려면 배포 환경에 OPENAI_API_KEY 설정이 필요합니다.")
+
 if uploaded is not None:
     st.image(uploaded, caption=uploaded.name)
     st.caption("여권, 카드, 예약번호 등 민감한 이미지는 업로드하지 마세요.")
-    if st.button("이미지 분석", type="primary"):
+    if st.button("이미지 분석", type="primary", disabled=not openai_ready):
         try:
             with st.spinner("GPT가 이미지를 분석하고 있습니다."):
                 result = upload_image(uploaded.name, uploaded.getvalue(), uploaded.type, question)

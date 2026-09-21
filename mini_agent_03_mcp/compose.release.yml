@@ -1,0 +1,14 @@
+# Release 구성은 이미 Registry에 게시된 이미지를 받아 실행한다. 실제 image 주소는
+# .env에만 두며, CI는 이 파일로 포트를 열거나 컨테이너를 시작하지 않는다.
+services:
+  travel_mcp:
+    image: ${TRAVEL_MCP_IMAGE:?TRAVEL_MCP_IMAGE을 .env에 설정하세요}
+    build: !reset null
+
+  backend:
+    image: ${BACKEND_IMAGE:?BACKEND_IMAGE을 .env에 설정하세요}
+    build: !reset null
+
+  frontend:
+    image: ${FRONTEND_IMAGE:?FRONTEND_IMAGE을 .env에 설정하세요}
+    build: !reset null

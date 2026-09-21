@@ -1,0 +1,56 @@
+name: Mini Agent 01 LLM wk01 Deploy
+
+on:
+  workflow_run:
+    workflows: ["Mini Agent 01 LLM Docker Hub Release"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Docker Hub version to deploy, for example 1.0.0"
+        required: true
+        default: "1.0.0"
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mini-agent-01-llm-wk01
+  cancel-in-progress: false
+
+jobs:
+  deploy-and-verify:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    environment: haedeun
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Configure wk01 SSH identity
+        env:
+          AWS_SSH_PRIVATE_KEY: ${{ secrets.AWS_SSH_PRIVATE_KEY }}
+          AWS_SSH_KNOWN_HOSTS: ${{ secrets.AWS_SSH_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s' "$AWS_SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          printf '%s\n' "$AWS_SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+      - name: Copy release Compose definition
+        env:
+          AWS_HOST: ${{ secrets.AWS_HOST }}
+          AWS_USER: ${{ secrets.AWS_USER }}
+        run: |
+          ssh "$AWS_USER@$AWS_HOST" 'mkdir -p ~/mini-agent-01-llm'
+          scp mini_agent_01_llm/compose.release.yml "$AWS_USER@$AWS_HOST:~/mini-agent-01-llm/compose.release.yml"
+      - name: Pull, run, and verify version on wk01
+        env:
+          AWS_HOST: ${{ secrets.AWS_HOST }}
+          AWS_USER: ${{ secrets.AWS_USER }}
+          VERSION: ${{ github.event.inputs.version || github.event.workflow_run.head_sha }}
+        run: |
+          ssh "$AWS_USER@$AWS_HOST" "cd ~/mini-agent-01-llm && test -f .env && sed -i 's#^BACKEND_IMAGE=.*#BACKEND_IMAGE=haedeuncha/mini-agent-01-llm:backend-$VERSION#; s#^FRONTEND_IMAGE=.*#FRONTEND_IMAGE=haedeuncha/mini-agent-01-llm:frontend-$VERSION#' .env && docker compose --env-file .env -f compose.release.yml config --quiet && docker compose --env-file .env -f compose.release.yml pull && docker compose --env-file .env -f compose.release.yml up -d && curl --fail --retry 12 --retry-delay 5 http://127.0.0.1:8000/health"

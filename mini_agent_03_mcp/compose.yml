@@ -1,0 +1,40 @@
+name: mini-agent-03-mcp
+
+services:
+  travel_mcp:
+    build:
+      context: .
+      dockerfile: mcp_server/Dockerfile
+    environment:
+      # Container 안에서는 모든 인터페이스를 수신하지만, 호스트 공개 포트는 8010으로 고정한다.
+      MCP_HOST: 0.0.0.0
+      MCP_PORT: "8010"
+    ports:
+      - "${MCP_PORT:-8010}:8010"
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    environment:
+      # Frontend와 MCP의 내부 통신은 Docker 서비스 이름을 사용해 호스트 loopback 혼동을 막는다.
+      TRAVEL_MCP_URL: http://travel_mcp:8010/mcp
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4.1-mini}
+    depends_on:
+      travel_mcp:
+        condition: service_started
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    environment:
+      BACKEND_API_URL: http://backend:8000
+    depends_on:
+      backend:
+        condition: service_started
+    ports:
+      - "${FRONTEND_PORT:-8501}:8501"
